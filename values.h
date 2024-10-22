@@ -6,5 +6,5 @@ const int SCREEN_HEIGHT = 1000;
 const char* GAME_TITLE = "Maze Game";
 
 //Dificulty
-const int CELL_SIZE = 30;
+const int CELL_SIZE = 15;
 
