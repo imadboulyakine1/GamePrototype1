@@ -104,6 +104,19 @@ public:
     }
 };
 
+class Player{
+public:
+    int x,y;
+    bool isWall,isVisited;
+
+    Cell(int xCoord = 0, int yCoord = 0, bool wall = true, bool visited = false) : x(xCoord), y(yCoord), isWall(wall), isVisited(visited) {} 
+
+    void render() const {
+        Color color = isWall ? BLACK : WHITE;  // Black for walls, white for paths
+        DrawRectangle(x , y, CELL_SIZE, CELL_SIZE, color);
+    }
+};
+
 int main() {
     //Basic Window Setup
     
