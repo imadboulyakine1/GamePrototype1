@@ -1,4 +1,5 @@
 # GamePrototype1
+g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++ 
 
 khli hna khawi 
 
@@ -20,7 +21,7 @@ khli hna khawi
 
     Maze Constructor (Maze.cpp): Initialize the maze grid with cells.
 
-    Create Player Class (Header Player.h): Define x, y, speed, and movement methods.
+    Create Player Class (Header Player.h): Define x, y, speed, .
 
     Player Implementation (Player.cpp): Implement player movement logic.
 
@@ -33,6 +34,7 @@ khli hna khawi
     Collision Detection (Simple): Prevent the player from moving through walls.
 
     Refactor Rendering: Move rendering logic from main() into Maze::render() and Player::render().
+
 
     Game Loop Structure: Separate initialization, update, and drawing logic in main().
 

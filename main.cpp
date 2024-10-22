@@ -106,9 +106,10 @@ public:
 
 int main() {
     //Basic Window Setup
-
+    
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE); 
     SetTargetFPS(60); 
+
 
     Maze maze;
     maze.Generate();
