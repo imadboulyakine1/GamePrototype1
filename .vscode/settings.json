@@ -52,5 +52,6 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "text_encoding": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/kali/Projects/GamePrototype1/raylib"
 }
