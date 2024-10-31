@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <random>
-#include <algorithm>
+#include <set>
 
 using namespace std;
 
@@ -31,6 +31,9 @@ public:
     int mazeWidth = SCREEN_WIDTH;
     int mazeHeight = SCREEN_HEIGHT;
 
+    std::pair<int, int> start;
+    std::pair<int, int> finish;
+
     Maze() : mazeWidth(SCREEN_WIDTH / CELL_SIZE), mazeHeight(SCREEN_HEIGHT / CELL_SIZE)
     {
         maze.resize(mazeHeight);
@@ -55,178 +58,238 @@ public:
 
     void Generate(bool visualize = false)
     {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::uniform_int_distribution<> distribWidth(1, mazeWidth - 2); // Exclude corners
+        std::uniform_int_distribution<> distribHeight(1, mazeHeight - 2);
+
+        std::set<std::pair<int, int>> frontier; // Store frontier cells (x, y)
 
         int startX = 1;
         int startY = 1;
 
-        if (startX >= mazeWidth || startY >= mazeHeight)
-            return;
-
         maze[startY][startX].isVisited = true;
         maze[startY][startX].isWall = false;
 
-        std::vector<std::pair<int, int>> frontiers;
-
-        auto add_frontier = [&](int x, int y)
+        auto add_to_frontier = [&](int x, int y)
         {
-            if (x >= 1 && x < mazeWidth - 1 && y >= 1 && y < mazeHeight - 1 && maze[y][x].isWall)
+            if (x >= 1 && x < mazeWidth - 1 && y >= 1 && y < mazeHeight - 1 && !maze[y][x].isVisited)
             {
-                frontiers.push_back({x, y});
+                frontier.insert({x, y});
             }
         };
 
-        add_frontier(startX + 1, startY);add_frontier(startX - 1, startY);
-        add_frontier(startX, startY + 1);add_frontier(startX, startY - 1);
+        add_to_frontier(startX + 2, startY);
+        add_to_frontier(startX - 2, startY);
+        add_to_frontier(startX, startY + 2);
+        add_to_frontier(startX, startY - 2);
 
-        while (!frontiers.empty())
+        while (!frontier.empty())
         {
-            int randomIndex = getRandomIndex(frontiers.size());
-            std::pair<int, int> wall = frontiers[randomIndex];
-            frontiers.erase(frontiers.begin() + randomIndex);
+            // Choose a random frontier cell
+            int randomIndex = getRandomIndex(frontier.size());
+            auto it = frontier.begin();
+            std::advance(it, randomIndex); // Move iterator to the random position
 
-            int x = wall.first;
-            int y = wall.second;
+            int x = it->first;
+            int y = it->second;
+            frontier.erase(it);
 
-            int visitedNeighbors = 0;
-            int nx = -1, ny = -1;
+            maze[y][x].isVisited = true;
+            maze[y][x].isWall = false;
 
-            auto check_neighbor = [&](int cx, int cy)
+            // Connect to a visited neighbor
+            int nx = x, ny = y;
+            while (true)
             {
-                if (cx >= 0 && cx < mazeWidth && cy >= 0 && cy < mazeHeight && maze[cy][cx].isVisited && !maze[cy][cx].isWall)
+                int dx[] = {0, 0, 2, -2};
+                int dy[] = {2, -2, 0, 0};
+                int r = getRandomIndex(4);
+                nx = x + dx[r];
+                ny = y + dy[r];
+
+                if (nx >= 0 && nx < mazeWidth && ny >= 0 && ny < mazeHeight && maze[ny][nx].isVisited)
                 {
-
-                    visitedNeighbors++;
-                    nx = cx;
-                    ny = cy;
+                    maze[(y + ny) / 2][(x + nx) / 2].isWall = false; // Remove wall between
+                    break;
                 }
-            };
+            }
 
-            check_neighbor(x + 1, y);check_neighbor(x - 1, y);
-            check_neighbor(x, y + 1);check_neighbor(x, y - 1);
+            // Add unvisited neighbors to the frontier
+            add_to_frontier(x + 2, y);
+            add_to_frontier(x - 2, y);
+            add_to_frontier(x, y + 2);
+            add_to_frontier(x, y - 2);
 
-            if (visitedNeighbors == 1)
+            if (visualize)
             {
-                maze[y][x].isVisited = true;
-                maze[y][x].isWall = false;
-
-                if (visualize) { // Visualization block
-                    BeginDrawing();
-                    ClearBackground(RAYWHITE);
-                    Render(); // Render the current maze state
-                    DrawText("Generating Maze...", 10, 10, 20, RED); // Display progress message
-                    EndDrawing();
-                    WaitTime(0.005f); // Introduce a small delay (adjust as needed) 
-                }
-
-                add_frontier(x + 1, y);add_frontier(x - 1, y);
-                add_frontier(x, y + 1);add_frontier(x, y - 1);
+                BeginDrawing();
+                ClearBackground(RAYWHITE);
+                Render();
+                EndDrawing();
+                WaitTime(0.01f);
             }
         }
 
-        if (visualize) { // Final render after generation
-            BeginDrawing();
-            ClearBackground(RAYWHITE);
-            Render();
-            DrawText("Maze Generated!", 10, 10, 20, GREEN);
-            EndDrawing();
-            WaitTime(2.0f); // Pause to show the finished maze
-        }
-    }
+        int startSide = getRandomIndex(4); // 0: Top, 1: Right, 2: Bottom, 3: Left
+        int finishSide = getRandomIndex(4);
 
-    void Render() const{
-        for (const auto &row : maze)
-    {
-        for (const auto &cell : row)
+        while (startSide == finishSide)
+            finishSide = getRandomIndex(4);
+
+        switch (startSide)
         {
-            cell.render();
+        case 0:
+            start = {distribWidth(gen), 0};
+            break; // Top
+        case 1:
+            start = {mazeWidth - 1, distribHeight(gen)};
+            break; // Right
+        case 2:
+            start = {distribWidth(gen), mazeHeight - 1};
+            break; // Bottom
+        case 3:
+            start = {0, distribHeight(gen)};
+            break; // Left
         }
-    }
+
+        switch (finishSide)
+        {
+        case 0:
+            finish = {distribWidth(gen), 0};
+            break; // Top
+        case 1:
+            finish = {mazeWidth - 1, distribHeight(gen)};
+            break; // Right
+        case 2:
+            finish = {distribWidth(gen), mazeHeight - 1};
+            break; // Bottom
+        case 3:
+            finish = {0, distribHeight(gen)};
+            break; // Left
+        }
+
+        // Carve out the start and end points
+        maze[start.second][start.first].isWall = false;
+        maze[finish.second][finish.first].isWall = false;
     }
 
-
+    void Render() const
+    {
+        for (const auto &row : maze)
+        {
+            for (const auto &cell : row)
+            {
+                cell.render();
+            }
+        }
+        DrawRectangle(start.first * CELL_SIZE, start.second * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN); // Start
+        DrawRectangle(finish.first * CELL_SIZE, finish.second * CELL_SIZE, CELL_SIZE, CELL_SIZE, RED);
+    }
 };
 
 class Player
 {
 public:
-    int x,y;
+    int x, y;
     float speed;
 
     Player(int startX, int startY, float playerSpeed) : x(startX), y(startY), speed(playerSpeed) {}
 
-    void moveUp(const Maze& maze) {
+    void moveUp(const Maze &maze)
+    {
         int nextY = y - speed;
-        if (!isColliding(x, nextY, maze)) {
+        if (!isColliding(x, nextY, maze))
+        {
             y = nextY;
             cout << speed << endl;
         }
     }
-    void moveDown(const Maze& maze) {
+    void moveDown(const Maze &maze)
+    {
         int nextY = y + speed;
-        if (!isColliding(x, nextY, maze)) {
+        if (!isColliding(x, nextY, maze))
+        {
             y = nextY;
         }
     }
-    void moveLeft(const Maze& maze) {
+    void moveLeft(const Maze &maze)
+    {
         int nextX = x - speed;
-        if (!isColliding(nextX, y, maze)) {
+        if (!isColliding(nextX, y, maze))
+        {
             x = nextX;
         }
     }
-    void moveRight(const Maze& maze) {
+    void moveRight(const Maze &maze)
+    {
         int nextX = x + speed;
-        if (!isColliding(nextX, y, maze)) {
+        if (!isColliding(nextX, y, maze))
+        {
             x = nextX;
         }
     }
 
-    bool isColliding(int nextX, int nextY, const Maze& maze) const {
+    bool isColliding(int nextX, int nextY, const Maze &maze) const
+    {
         // Calculate the grid coordinates of the player's next position
         int gridX = nextX / CELL_SIZE;
         int gridY = nextY / CELL_SIZE;
 
         // Check bounds and if the next cell is a wall
-        return (gridX < 0 || gridX >= maze.mazeWidth || 
+        return (gridX < 0 || gridX >= maze.mazeWidth ||
                 gridY < 0 || gridY >= maze.mazeHeight ||
                 maze.maze[gridY][gridX].isWall);
     }
 
-    void render(){
-        DrawRectangle(x, y, CELL_SIZE/3, CELL_SIZE/3, PINK);
+    void render()
+    {
+        DrawRectangle(x, y, CELL_SIZE / 3, CELL_SIZE / 3, PINK);
     }
 };
 
-class Game{
+class Game
+{
 public:
     Maze maze;
     Player player;
 
+    Game() : player(CELL_SIZE, CELL_SIZE, float(CELL_SIZE / 15.0f)) {}
 
-    Game() : player(CELL_SIZE, CELL_SIZE, float(CELL_SIZE/15.0f)) {} 
+    void run()
+    {
+        maze.Generate(); // imad: u can toggel visualisation mode here
 
-    void run() {
-        maze.Generate(); //imad: u can toggel visualisation mode here 
+        player.x = maze.start.first * CELL_SIZE;  
+        player.y = maze.start.second * CELL_SIZE;
 
-        while (!WindowShouldClose()) {
+        while (!WindowShouldClose())
+        {
             update();
             render();
         }
     }
 
-    void update() {
-        if (IsKeyDown(KEY_UP)) player.moveUp(maze);
-        if (IsKeyDown(KEY_DOWN)) player.moveDown(maze);
-        if (IsKeyDown(KEY_LEFT)) player.moveLeft(maze);
-        if (IsKeyDown(KEY_RIGHT)) player.moveRight(maze);
-        
+    void update()
+    {
+        if (IsKeyDown(KEY_UP))
+            player.moveUp(maze);
+        if (IsKeyDown(KEY_DOWN))
+            player.moveDown(maze);
+        if (IsKeyDown(KEY_LEFT))
+            player.moveLeft(maze);
+        if (IsKeyDown(KEY_RIGHT))
+            player.moveRight(maze);
     }
 
-    void render() {
+    void render()
+    {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
         maze.Render();
-        player.render();  // Render the player
+        player.render(); // Render the player
 
         EndDrawing();
     }
