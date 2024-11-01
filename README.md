@@ -3,7 +3,7 @@ g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++
 
 khli hna khawi 
 
- Project Setup and Core Classes (Steps 1-20)
+# Project Setup and Core Classes (Steps 1-20)
 
     Create Project Directory: Create a folder for your project (e.g., "MazeGame").
 
@@ -46,7 +46,7 @@ khli hna khawi
 
     Clean Up Main: main() should primarily handle window creation and running the Game instance.
 
-II. Maze Generation and Difficulty (Steps 21-40)
+# II. Maze Generation and Difficulty (Steps 21-40)
 
     Maze Generation Algorithm (Research): Choose an algorithm (e.g., Recursive Backtracker, Prim's).
 
@@ -88,7 +88,7 @@ II. Maze Generation and Difficulty (Steps 21-40)
 
     Test Different Difficulties: Thoroughly test all difficulty levels.
 
-III. User Interface and Polish (Steps 41-60)
+# III. User Interface and Polish (Steps 41-60)
 
     Menu Screen: Create a main menu with options (Start, Difficulty, Quit).
 
@@ -130,7 +130,7 @@ III. User Interface and Polish (Steps 41-60)
 
     Documentation: Create a basic document explaining how to build and run the game.
 
-IV. Optional Features and Extensions (Steps 61-80)
+# IV. Optional Features and Extensions (Steps 61-80)
 
     Save/Load System: Implement saving and loading game progress.
 
@@ -160,7 +160,7 @@ IV. Optional Features and Extensions (Steps 61-80)
 
     First-Person Perspective (Advanced): Implement a first-person view.
 
-V. Finalization and Refinement (Steps 81-100)
+# V. Finalization and Refinement (Steps 81-100)
 
     Thorough Testing: Conduct extensive testing to identify and fix all bugs.
 
