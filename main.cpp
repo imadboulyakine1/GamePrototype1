@@ -132,6 +132,15 @@ public:
             }
         }
 
+        for (int i = 0; i < mazeHeight; ++i) {
+            maze[i][0].isWall = true;             // Left border
+            maze[i][mazeWidth - 1].isWall = true;  // Right border
+        }
+        for (int j = 0; j < mazeWidth; ++j) {
+            maze[0][j].isWall = true;             // Top border
+            maze[mazeHeight - 1][j].isWall = true; // Bottom border
+        }
+        
         int startSide = getRandomIndex(4); // 0: Top, 1: Right, 2: Bottom, 3: Left
         int finishSide = getRandomIndex(4);
 
