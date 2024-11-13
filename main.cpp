@@ -1,5 +1,5 @@
 #include "values.h"
-
+//slmimadjdid
 #include <iostream>
 #include <raylib.h>
 #include <vector>
@@ -36,8 +36,8 @@ public:
 
     Maze() : mazeWidth(SCREEN_WIDTH / CELL_SIZE), mazeHeight(SCREEN_HEIGHT / CELL_SIZE)
     {
+        //Come la fct de un matrix dans c
         maze.resize(mazeHeight);
-
         for (int i = 0; i < mazeHeight; ++i)
         {
             maze[i].reserve(mazeWidth);
@@ -212,7 +212,6 @@ public:
         if (!isColliding(x, nextY, maze))
         {
             y = nextY;
-            cout << speed << endl;
         }
     }
     void moveDown(const Maze &maze)
