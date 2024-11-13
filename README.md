@@ -1,7 +1,7 @@
 # GamePrototype1
 g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++ 
 
-khli hna khawi 
+test
 
 # Project Setup and Core Classes (Steps 1-20)
 
