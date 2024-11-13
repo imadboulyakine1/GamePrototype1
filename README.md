@@ -3,7 +3,7 @@ g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++
 
 test
 
-# Project Setup and Core Classes (Steps 1-20)
+## Project Setup and Core Classes (Steps 1-20)
 
     Create Project Directory: Create a folder for your project (e.g., "MazeGame").
 
@@ -48,15 +48,15 @@ test
 
 # II. Maze Generation and Difficulty (Steps 21-40)
 
-    Maze Generation Algorithm (Research): Choose an algorithm (e.g., Recursive Backtracker, Prim's).
+    #Maze Generation Algorithm (Research): Choose an algorithm (e.g., Recursive Backtracker, Prim's).
 
-    Implement Maze Generation: Add Maze::generate() to create the maze using the chosen algorithm.
+    #Implement Maze Generation: Add Maze::generate() to create the maze using the chosen algorithm.
 
-    Randomness: Use a random number generator for maze generation.
+    #Randomness: Use a random number generator for maze generation.
 
-    Test Maze Generation: Visually verify that the maze is generated correctly.
+    #Test Maze Generation: Visually verify that the maze is generated correctly.
 
-    Difficulty Enum: Create an enum Difficulty (Easy, Medium, Hard).
+    #Difficulty Enum: Create an enum Difficulty (Easy, Medium, Hard).
 
     Difficulty Implementation: Modify Maze::generate() to accept a Difficulty parameter.
 
