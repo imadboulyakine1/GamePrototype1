@@ -43,6 +43,8 @@ public:
     int mazeHeight;
     int cellSize;
     RenderTexture2D mazeTexture; // Add RenderTexture2D member
+    int offsetX; // Add offsetX
+    int offsetY; // Add offsetY
 
     std::pair<int, int> start;
     std::pair<int, int> finish;
@@ -60,6 +62,8 @@ public:
             }
         }
         mazeTexture = LoadRenderTexture(MAZE_WIDTH, MAZE_HEIGHT); // Initialize mazeTexture
+        offsetX = (SCREEN_WIDTH - MAZE_WIDTH) / 2; // Calculate offsetX
+        offsetY = (SCREEN_HEIGHT - MAZE_HEIGHT) / 2; // Calculate offsetY
     }
 
     ~Maze() {
@@ -234,7 +238,7 @@ public:
 
     void Render() const
     {
-        DrawTextureRec(mazeTexture.texture, {0, 0, (float)mazeTexture.texture.width, (float)-mazeTexture.texture.height}, {0, 0}, WHITE);
+        DrawTextureRec(mazeTexture.texture, {0.0f, 0.0f, (float)mazeTexture.texture.width, (float)-mazeTexture.texture.height}, {(float)offsetX, (float)offsetY}, WHITE);
     }
 };
 
@@ -275,6 +279,45 @@ void ShowDifficultyMenu(int &cellSize, bool &fullscreen)
         }
     }
     UnloadTexture(bg);
+}
+
+void ShowStory()
+{
+    const char* storyLines[] = {
+        "In a world full of mazes...",
+        "You are the chosen one...",
+        "Navigate through the labyrinth...",
+        "And find your way to freedom..."
+    };
+    int numLines = sizeof(storyLines) / sizeof(storyLines[0]);
+    int lineIndex = 0;
+    float alpha = 0.0f;
+    float fadeSpeed = 0.02f;
+
+    while (lineIndex < numLines)
+    {
+        BeginDrawing();
+        ClearBackground(BLACK);
+
+        if (alpha < 1.0f)
+        {
+            alpha += fadeSpeed;
+        }
+        else
+        {
+            alpha = 1.0f;
+        }
+
+        DrawText(storyLines[lineIndex], SCREEN_WIDTH / 2 - MeasureText(storyLines[lineIndex], 20) / 2, SCREEN_HEIGHT / 2, 20, Fade(WHITE, alpha));
+
+        EndDrawing();
+
+        if (alpha >= 1.0f && IsKeyPressed(KEY_SPACE))
+        {
+            alpha = 0.0f;
+            lineIndex++;
+        }
+    }
 }
 
 class Player
@@ -351,19 +394,19 @@ public:
                 maze.maze[bottomRightY][bottomRightX].isWall);
     }
 
-    void render()
+    void render(int offsetX, int offsetY) const
     {
         // Draw the trail with glow effect using shader
         BeginShaderMode(glowShader);
         for (size_t i = 1; i < trail.size(); ++i)
         {
-            DrawLineEx({(float)trail[i-1].first + cellSize / 2, (float)trail[i-1].second + cellSize / 2},
-                       {(float)trail[i].first + cellSize / 2, (float)trail[i].second + cellSize / 2},
+            DrawLineEx({(float)trail[i-1].first + cellSize / 2 + offsetX, (float)trail[i-1].second + cellSize / 2 + offsetY},
+                       {(float)trail[i].first + cellSize / 2 + offsetX, (float)trail[i].second + cellSize / 2 + offsetY},
                        cellSize / 4, WALL_GLOW_COLOR);
         }
         EndShaderMode();
         // Draw the player
-        DrawRectangle(x, y, cellSize, cellSize, PLAYER_COLOR);
+        DrawRectangle(x + offsetX, y + offsetY, cellSize, cellSize, PLAYER_COLOR);
     }
 };
 
@@ -437,7 +480,7 @@ public:
         DrawTexture(gameBg, 0, 0, WHITE);
 
         maze.Render();
-        player.render(); // Render the player
+        player.render(maze.offsetX, maze.offsetY); // Pass offsets to player render
 
         DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, TEXT_COLOR);
         DrawText("Press R to Reset", 10, 40, 20, TEXT_COLOR);
@@ -493,6 +536,8 @@ int main()
     SetTargetFPS(60);
 
     glowShader = LoadShader(0, "glow.fs"); // Load the glow shader
+
+    ShowStory(); // Show the story before the difficulty menu
 
     int cellSize;
     bool fullscreen = false;
