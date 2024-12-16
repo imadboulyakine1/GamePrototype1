@@ -1,4 +1,21 @@
-# GamePrototype1
+# Maze Game
+
+This is a simple maze game implemented using C++ and raylib.
+
+## How to Run
+
+1. Make sure you have raylib installed.
+2. Compile the project using your preferred C++ compiler.
+3. Run the executable.
+
+## Controls
+
+- Arrow keys to move the player.
+- `R` to reset the game.
+- `F` to toggle fullscreen.
+- `SPACE` to replay after winning.
+- `M` to return to the menu after winning.
+
 g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++ 
 
 test
