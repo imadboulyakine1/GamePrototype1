@@ -419,8 +419,17 @@ public:
     int cellSize;
     bool gameWon;
     bool fullscreen;
+    Texture2D gameBg;
 
-    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen) {}
+    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen)
+    {
+        gameBg = LoadTexture("game.jpg");
+    }
+
+    ~Game()
+    {
+        UnloadTexture(gameBg);
+    }
 
     void run()
     {
@@ -474,7 +483,6 @@ public:
 
     void render()
     {
-        Texture2D gameBg = LoadTexture("game.jpg");
         BeginDrawing();
         ClearBackground(BACKGROUND_COLOR);
         DrawTexture(gameBg, 0, 0, WHITE);
@@ -495,7 +503,6 @@ public:
         }
 
         EndDrawing();
-        UnloadTexture(gameBg);
     }
 
     void reset()
