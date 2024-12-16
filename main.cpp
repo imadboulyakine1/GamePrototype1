@@ -9,6 +9,9 @@
 
 using namespace std;
 
+const int MAZE_WIDTH = 1000;
+const int MAZE_HEIGHT = 1000;
+
 class Cell
 {
 public:
@@ -17,10 +20,10 @@ public:
 
     Cell(int xCoord = 0, int yCoord = 0, bool wall = true, bool visited = false) : x(xCoord), y(yCoord), isWall(wall), isVisited(visited) {}
 
-    void render() const
+    void render(int cellSize) const
     {
         Color color = isWall ? BLACK : WHITE; // Black for walls, white for paths
-        DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, color);
+        DrawRectangle(x, y, cellSize, cellSize, color);
     }
 };
 
@@ -28,13 +31,14 @@ class Maze
 {
 public:
     vector<vector<Cell>> maze;
-    int mazeWidth = SCREEN_WIDTH;
-    int mazeHeight = SCREEN_HEIGHT;
+    int mazeWidth;
+    int mazeHeight;
+    int cellSize;
 
     std::pair<int, int> start;
     std::pair<int, int> finish;
 
-    Maze() : mazeWidth(SCREEN_WIDTH / CELL_SIZE), mazeHeight(SCREEN_HEIGHT / CELL_SIZE)
+    Maze(int cellSize) : cellSize(cellSize), mazeWidth(MAZE_WIDTH / cellSize), mazeHeight(MAZE_HEIGHT / cellSize)
     {
         // Come la fct de un matrix dans c
         maze.resize(mazeHeight);
@@ -43,7 +47,7 @@ public:
             maze[i].reserve(mazeWidth);
             for (int j = 0; j < mazeWidth; ++j)
             {
-                maze[i].push_back(Cell(j * CELL_SIZE, i * CELL_SIZE));
+                maze[i].push_back(Cell(j * cellSize, i * cellSize));
             }
         }
     }
@@ -56,151 +60,149 @@ public:
         return distrib(gen);
     }
 
-bool hasNeighbors(int x, int y) const {
-    int dx[] = {0, 0, 1, -1};
-    int dy[] = {1, -1, 0, 0};
+    bool hasNeighbors(int x, int y) const {
+        int dx[] = {0, 0, 1, -1};
+        int dy[] = {1, -1, 0, 0};
 
-    for (int i = 0; i < 4; ++i) {
-        int nx = x + dx[i];
-        int ny = y + dy[i];
-        if (nx >= 0 && nx < mazeWidth && ny >= 0 && ny < mazeHeight && !maze[ny][nx].isWall && (nx != start.first || ny != start.second) ) { // Exclude start itself
-            return true;
+        for (int i = 0; i < 4; ++i) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+            if (nx >= 0 && nx < mazeWidth && ny >= 0 && ny < mazeHeight && !maze[ny][nx].isWall && (nx != start.first || ny != start.second) ) { // Exclude start itself
+                return true;
+            }
         }
+        return false;
     }
-    return false;
-}
 
-void Generate(bool visualize = false)
-{
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    std::uniform_int_distribution<> distribWidth(1, mazeWidth - 2); // Exclude corners
-    std::uniform_int_distribution<> distribHeight(1, mazeHeight - 2);
-
-    std::set<std::pair<int, int>> frontier; // Store frontier cells (x, y)
-
-    int startX = 1;
-    int startY = 1;
-
-    maze[startY][startX].isVisited = true;
-    maze[startY][startX].isWall = false;
-
-    auto add_to_frontier = [&](int x, int y)
+    void Generate(bool visualize = false)
     {
-        if (x >= 1 && x < mazeWidth - 1 && y >= 1 && y < mazeHeight - 1 && !maze[y][x].isVisited)
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::uniform_int_distribution<> distribWidth(1, mazeWidth - 2); // Exclude corners
+        std::uniform_int_distribution<> distribHeight(1, mazeHeight - 2);
+
+        std::set<std::pair<int, int>> frontier; // Store frontier cells (x, y)
+
+        int startX = 1;
+        int startY = 1;
+
+        maze[startY][startX].isVisited = true;
+        maze[startY][startX].isWall = false;
+
+        auto add_to_frontier = [&](int x, int y)
         {
-            frontier.insert({x, y});
-        }
-    };
-
-    add_to_frontier(startX + 2, startY);
-    add_to_frontier(startX - 2, startY);
-    add_to_frontier(startX, startY + 2);
-    add_to_frontier(startX, startY - 2);
-
-    while (!frontier.empty())
-    {
-        // Choose a random frontier cell
-        int randomIndex = getRandomIndex(frontier.size());
-        auto it = frontier.begin();
-        std::advance(it, randomIndex); // Move iterator to the random position
-
-        int x = it->first;
-        int y = it->second;
-        frontier.erase(it);
-
-        maze[y][x].isVisited = true;
-        maze[y][x].isWall = false;
-
-        // Connect to a visited neighbor
-        int nx = x, ny = y;
-        while (true)
-        {
-            int dx[] = {0, 0, 2, -2};
-            int dy[] = {2, -2, 0, 0};
-            int r = getRandomIndex(4);
-            nx = x + dx[r];
-            ny = y + dy[r];
-
-            if (nx >= 0 && nx < mazeWidth && ny >= 0 && ny < mazeHeight && maze[ny][nx].isVisited)
+            if (x >= 1 && x < mazeWidth - 1 && y >= 1 && y < mazeHeight - 1 && !maze[y][x].isVisited)
             {
-                maze[(y + ny) / 2][(x + nx) / 2].isWall = false; // Remove wall between
-                break;
+                frontier.insert({x, y});
+            }
+        };
+
+        add_to_frontier(startX + 2, startY);
+        add_to_frontier(startX - 2, startY);
+        add_to_frontier(startX, startY + 2);
+        add_to_frontier(startX, startY - 2);
+
+        while (!frontier.empty())
+        {
+            // Choose a random frontier cell
+            int randomIndex = getRandomIndex(frontier.size());
+            auto it = frontier.begin();
+            std::advance(it, randomIndex); // Move iterator to the random position
+
+            int x = it->first;
+            int y = it->second;
+            frontier.erase(it);
+
+            maze[y][x].isVisited = true;
+            maze[y][x].isWall = false;
+
+            // Connect to a visited neighbor
+            int nx = x, ny = y;
+            while (true)
+            {
+                int dx[] = {0, 0, 2, -2};
+                int dy[] = {2, -2, 0, 0};
+                int r = getRandomIndex(4);
+                nx = x + dx[r];
+                ny = y + dy[r];
+
+                if (nx >= 0 && nx < mazeWidth && ny >= 0 && ny < mazeHeight && maze[ny][nx].isVisited)
+                {
+                    maze[(y + ny) / 2][(x + nx) / 2].isWall = false; // Remove wall between
+                    break;
+                }
+            }
+
+            // Add unvisited neighbors to the frontier
+            add_to_frontier(x + 2, y);
+            add_to_frontier(x - 2, y);
+            add_to_frontier(x, y + 2);
+            add_to_frontier(x, y - 2);
+
+            if (visualize)
+            {
+                BeginDrawing();
+                ClearBackground(RAYWHITE);
+                Render();
+                EndDrawing();
+                WaitTime(0.01f);
             }
         }
 
-        // Add unvisited neighbors to the frontier
-        add_to_frontier(x + 2, y);
-        add_to_frontier(x - 2, y);
-        add_to_frontier(x, y + 2);
-        add_to_frontier(x, y - 2);
-
-        if (visualize)
-        {
-            BeginDrawing();
-            ClearBackground(RAYWHITE);
-            Render();
-            EndDrawing();
-            WaitTime(0.01f);
+        do {
+            for (int i = 0; i < mazeHeight; ++i) {
+            maze[i][0].isWall = true;             // Left border
+            maze[i][mazeWidth - 1].isWall = true;  // Right border
         }
+        for (int j = 0; j < mazeWidth; ++j) {
+            maze[0][j].isWall = true;             // Top border
+            maze[mazeHeight - 1][j].isWall = true; // Bottom border
+        }
+        
+        int startSide = getRandomIndex(4); // 0: Top, 1: Right, 2: Bottom, 3: Left
+        int finishSide = getRandomIndex(4);
+
+        while (startSide == finishSide)
+            finishSide = getRandomIndex(4);
+
+        switch (startSide)
+        {
+        case 0:
+            start = {distribWidth(gen), 0};
+            break; // Top
+        case 1:
+            start = {mazeWidth - 1, distribHeight(gen)};
+            break; // Right
+        case 2:
+            start = {distribWidth(gen), mazeHeight - 1};
+            break; // Bottom
+        case 3:
+            start = {0, distribHeight(gen)};
+            break; // Left
+        }
+
+        switch (finishSide)
+        {
+        case 0:
+            finish = {distribWidth(gen), 0};
+            break; // Top
+        case 1:
+            finish = {mazeWidth - 1, distribHeight(gen)};
+            break; // Right
+        case 2:
+            finish = {distribWidth(gen), mazeHeight - 1};
+            break; // Bottom
+        case 3:
+            finish = {0, distribHeight(gen)};
+            break; // Left
+        }
+
+        // Carve out the start and end points
+        maze[start.second][start.first].isWall = false;
+        maze[finish.second][finish.first].isWall = false;
+        } while (!hasNeighbors(start.first, start.second) || !hasNeighbors(finish.first, finish.second)); 
     }
-
-    do {
-        for (int i = 0; i < mazeHeight; ++i) {
-        maze[i][0].isWall = true;             // Left border
-        maze[i][mazeWidth - 1].isWall = true;  // Right border
-    }
-    for (int j = 0; j < mazeWidth; ++j) {
-        maze[0][j].isWall = true;             // Top border
-        maze[mazeHeight - 1][j].isWall = true; // Bottom border
-    }
-    
-    int startSide = getRandomIndex(4); // 0: Top, 1: Right, 2: Bottom, 3: Left
-    int finishSide = getRandomIndex(4);
-
-    while (startSide == finishSide)
-        finishSide = getRandomIndex(4);
-
-    switch (startSide)
-    {
-    case 0:
-        start = {distribWidth(gen), 0};
-        break; // Top
-    case 1:
-        start = {mazeWidth - 1, distribHeight(gen)};
-        break; // Right
-    case 2:
-        start = {distribWidth(gen), mazeHeight - 1};
-        break; // Bottom
-    case 3:
-        start = {0, distribHeight(gen)};
-        break; // Left
-    }
-
-    switch (finishSide)
-    {
-    case 0:
-        finish = {distribWidth(gen), 0};
-        break; // Top
-    case 1:
-        finish = {mazeWidth - 1, distribHeight(gen)};
-        break; // Right
-    case 2:
-        finish = {distribWidth(gen), mazeHeight - 1};
-        break; // Bottom
-    case 3:
-        finish = {0, distribHeight(gen)};
-        break; // Left
-    }
-
-    // Carve out the start and end points
-    maze[start.second][start.first].isWall = false;
-    maze[finish.second][finish.first].isWall = false;
-    } while (!hasNeighbors(start.first, start.second) || !hasNeighbors(finish.first, finish.second)); 
-
-    
-}
 
     void Render() const
     {
@@ -208,21 +210,58 @@ void Generate(bool visualize = false)
         {
             for (const auto &cell : row)
             {
-                cell.render();
+                cell.render(cellSize);
             }
         }
-        DrawRectangle(start.first * CELL_SIZE, start.second * CELL_SIZE, CELL_SIZE, CELL_SIZE, GREEN); // Start
-        DrawRectangle(finish.first * CELL_SIZE, finish.second * CELL_SIZE, CELL_SIZE, CELL_SIZE, RED);
+        DrawRectangle(start.first * cellSize, start.second * cellSize, cellSize, cellSize, GREEN); // Start
+        DrawRectangle(finish.first * cellSize, finish.second * cellSize, cellSize, cellSize, RED);
     }
 };
+
+void ShowDifficultyMenu(int &cellSize, bool &fullscreen)
+{
+    while (true)
+    {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        DrawText("Select Difficulty", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100, 20, BLACK);
+        DrawText("1. Easy", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 20, BLACK);
+        DrawText("2. Medium", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2, 20, BLACK);
+        DrawText("3. Hard", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 50, 20, BLACK);
+        DrawText("Press F for Fullscreen", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 100, 20, BLACK);
+        EndDrawing();
+
+        if (IsKeyPressed(KEY_ONE))
+        {
+            cellSize = 60;
+            break;
+        }
+        if (IsKeyPressed(KEY_TWO))
+        {
+            cellSize = 30;
+            break;
+        }
+        if (IsKeyPressed(KEY_THREE))
+        {
+            cellSize = 15;
+            break;
+        }
+        if (IsKeyPressed(KEY_F))
+        {
+            fullscreen = !fullscreen;
+            break;
+        }
+    }
+}
 
 class Player
 {
 public:
     int x, y;
     float speed;
+    int cellSize;
 
-    Player(int startX, int startY, float playerSpeed) : x(startX), y(startY), speed(playerSpeed) {}
+    Player(int startX, int startY, float playerSpeed, int cellSize) : x(startX), y(startY), speed(playerSpeed), cellSize(cellSize) {}
 
     void moveUp(const Maze &maze)
     {
@@ -260,14 +299,14 @@ public:
     bool isColliding(int nextX, int nextY, const Maze &maze) const
     {
         // Calculate the grid coordinates of the player's bounding box corners
-        int topLeftX = nextX / CELL_SIZE;
-        int topLeftY = nextY / CELL_SIZE;
-        int topRightX = (nextX + CELL_SIZE - 1) / CELL_SIZE;
-        int topRightY = nextY / CELL_SIZE;
-        int bottomLeftX = nextX / CELL_SIZE;
-        int bottomLeftY = (nextY + CELL_SIZE - 1) / CELL_SIZE;
-        int bottomRightX = (nextX + CELL_SIZE - 1) / CELL_SIZE;
-        int bottomRightY = (nextY + CELL_SIZE - 1) / CELL_SIZE;
+        int topLeftX = nextX / cellSize;
+        int topLeftY = nextY / cellSize;
+        int topRightX = (nextX + cellSize - 1) / cellSize;
+        int topRightY = nextY / cellSize;
+        int bottomLeftX = nextX / cellSize;
+        int bottomLeftY = (nextY + cellSize - 1) / cellSize;
+        int bottomRightX = (nextX + cellSize - 1) / cellSize;
+        int bottomRightY = (nextY + cellSize - 1) / cellSize;
 
         // Check bounds and if any of the next cells are walls
         return (topLeftX < 0 || topLeftX >= maze.mazeWidth ||
@@ -286,7 +325,7 @@ public:
 
     void render()
     {
-        DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, PINK);
+        DrawRectangle(x, y, cellSize, cellSize, PINK);
     }
 };
 
@@ -295,15 +334,19 @@ class Game
 public:
     Maze maze;
     Player player;
+    float timer;
+    int cellSize;
+    bool gameWon;
+    bool fullscreen;
 
-    Game() : player(CELL_SIZE, CELL_SIZE, float(CELL_SIZE / 15.0f)) {}
+    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 15.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen) {}
 
     void run()
     {
         maze.Generate(); // imad: u can toggel visualisation mode here
 
-        player.x = maze.start.first * CELL_SIZE;
-        player.y = maze.start.second * CELL_SIZE;
+        player.x = maze.start.first * maze.cellSize;
+        player.y = maze.start.second * maze.cellSize;
 
         while (!WindowShouldClose())
         {
@@ -314,14 +357,38 @@ public:
 
     void update()
     {
-        if (IsKeyDown(KEY_UP))
-            player.moveUp(maze);
-        if (IsKeyDown(KEY_DOWN))
-            player.moveDown(maze);
-        if (IsKeyDown(KEY_LEFT))
-            player.moveLeft(maze);
-        if (IsKeyDown(KEY_RIGHT))
-            player.moveRight(maze);
+        if (!gameWon)
+        {
+            if (IsKeyDown(KEY_UP))
+                player.moveUp(maze);
+            if (IsKeyDown(KEY_DOWN))
+                player.moveDown(maze);
+            if (IsKeyDown(KEY_LEFT))
+                player.moveLeft(maze);
+            if (IsKeyDown(KEY_RIGHT))
+                player.moveRight(maze);
+
+            if (IsKeyPressed(KEY_R))
+                reset();
+
+            if (IsKeyPressed(KEY_F))
+                toggleFullscreen();
+
+            timer += GetFrameTime();
+
+            // Check if player reached the finish point
+            if (player.x / cellSize == maze.finish.first && player.y / cellSize == maze.finish.second)
+            {
+                gameWon = true;
+            }
+        }
+        else
+        {
+            if (IsKeyPressed(KEY_SPACE))
+                reset();
+            if (IsKeyPressed(KEY_M))
+                returnToMenu();
+        }
     }
 
     void render()
@@ -332,7 +399,48 @@ public:
         maze.Render();
         player.render(); // Render the player
 
+        DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, BLACK);
+        DrawText("Press R to Reset", 10, 40, 20, BLACK);
+        DrawText("Press F to Toggle Fullscreen", 10, 70, 20, BLACK);
+
+        if (gameWon)
+        {
+            DrawText("You Win!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 40, GREEN);
+            DrawText("Press SPACE to Replay", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, 20, BLACK);
+            DrawText("Press M to go to Menu", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 30, 20, BLACK);
+        }
+
         EndDrawing();
+    }
+
+    void reset()
+    {
+        maze.Generate();
+        player.x = maze.start.first * maze.cellSize;
+        player.y = maze.start.second * maze.cellSize;
+        timer = 0.0f;
+        gameWon = false;
+    }
+
+    void returnToMenu()
+    {
+        int newCellSize;
+        bool fullscreen = IsWindowFullscreen();
+        ShowDifficultyMenu(newCellSize, fullscreen);
+        if (fullscreen != IsWindowFullscreen())
+        {
+            ToggleFullscreen();
+        }
+        cellSize = newCellSize;
+        maze = Maze(cellSize);
+        player = Player(cellSize, cellSize, float(cellSize / 15.0f), cellSize);
+        reset();
+    }
+
+    void toggleFullscreen()
+    {
+        fullscreen = !fullscreen;
+        ToggleFullscreen();
     }
 };
 
@@ -341,7 +449,16 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE);
     SetTargetFPS(60);
 
-    Game game; // Create a Game instance
+    int cellSize;
+    bool fullscreen = false;
+    ShowDifficultyMenu(cellSize, fullscreen);
+
+    if (fullscreen)
+    {
+        ToggleFullscreen();
+    }
+
+    Game game(cellSize, fullscreen); // Pass cellSize and fullscreen to Game instance
     game.run();
 
     CloseWindow();
