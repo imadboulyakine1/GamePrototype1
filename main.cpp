@@ -42,6 +42,7 @@ public:
     int mazeWidth;
     int mazeHeight;
     int cellSize;
+    RenderTexture2D mazeTexture; // Add RenderTexture2D member
 
     std::pair<int, int> start;
     std::pair<int, int> finish;
@@ -58,6 +59,11 @@ public:
                 maze[i].push_back(Cell(j * cellSize, i * cellSize));
             }
         }
+        mazeTexture = LoadRenderTexture(MAZE_WIDTH, MAZE_HEIGHT); // Initialize mazeTexture
+    }
+
+    ~Maze() {
+        UnloadRenderTexture(mazeTexture); // Unload mazeTexture
     }
 
     int getRandomIndex(int size)
@@ -210,10 +216,10 @@ public:
         maze[start.second][start.first].isWall = false;
         maze[finish.second][finish.first].isWall = false;
         } while (!hasNeighbors(start.first, start.second) || !hasNeighbors(finish.first, finish.second)); 
-    }
 
-    void Render() const
-    {
+        // Render the maze to the texture
+        BeginTextureMode(mazeTexture);
+        ClearBackground(BLANK); // Clear the texture background
         for (const auto &row : maze)
         {
             for (const auto &cell : row)
@@ -222,7 +228,13 @@ public:
             }
         }
         DrawRectangle(start.first * cellSize, start.second * cellSize, cellSize, cellSize, START_COLOR); // Start
-        DrawRectangle(finish.first * cellSize, finish.second * cellSize, cellSize, cellSize, FINISH_COLOR);
+        DrawRectangle(finish.first * cellSize, finish.second * cellSize, cellSize, cellSize, FINISH_COLOR); // Finish
+        EndTextureMode();
+    }
+
+    void Render() const
+    {
+        DrawTextureRec(mazeTexture.texture, {0, 0, (float)mazeTexture.texture.width, (float)-mazeTexture.texture.height}, {0, 0}, WHITE);
     }
 };
 
