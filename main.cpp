@@ -468,12 +468,8 @@ public:
 
     void render(int offsetX, int offsetY) const
     {
-        float wormPos[2] = {(float)x, (float)y};
-        BeginShaderMode(glowShader);
-        SetShaderValue(glowShader, GetShaderLocation(glowShader, "wormPosition"), wormPos, SHADER_UNIFORM_VEC2);
-        SetShaderValue(glowShader, GetShaderLocation(glowShader, "wormRadius"), &visionRadius, SHADER_UNIFORM_FLOAT);
-        DrawTexturePro(wormTexture, {0, 0, (float)wormTexture.width, (float)wormTexture.height}, {(float)(x + offsetX), (float)(y + offsetY), (float)cellSize, (float)cellSize}, {0, 0}, 0.0f, WHITE);
-        EndShaderMode();
+        // Draw the worm as a colored rectangle
+        DrawRectangle(x + offsetX, y + offsetY, cellSize, cellSize, RED);
     }
 };
 
