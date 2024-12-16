@@ -9,6 +9,13 @@
 
 using namespace std;
 
+enum Difficulty
+{
+    EASY,
+    MEDIUM,
+    HARD
+};
+
 class Cell
 {
 public:
@@ -340,7 +347,7 @@ int main()
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE);
     SetTargetFPS(60);
-
+    
     Game game; // Create a Game instance
     game.run();
 
