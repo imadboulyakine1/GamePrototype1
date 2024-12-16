@@ -18,6 +18,12 @@ const Color TEXT_COLOR = WHITE;
 // Texture Definitions
 extern Texture2D sandTexture;
 extern Texture2D rockTexture;
+extern Texture2D wormTexture;
+extern Texture2D playerTexture; // Add player texture definition
+
+// Sound Definitions
+extern Music backgroundMusic;
+extern Sound winSound;
 
 // Dificulty
 // const int CELL_SIZE = 30; // Removed CELL_SIZE definition

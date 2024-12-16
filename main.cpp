@@ -15,15 +15,35 @@ const int MAZE_HEIGHT = 1000;
 Shader glowShader;
 Texture2D sandTexture;
 Texture2D rockTexture;
+Texture2D wormTexture;
+Texture2D playerTexture; // Add player texture
+Music backgroundMusic;
+Sound winSound;
 
 void LoadTextures() {
     sandTexture = LoadTexture("sand.png");
     rockTexture = LoadTexture("rock.jpg");
+    wormTexture = LoadTexture("worm.png");
+    playerTexture = LoadTexture("player.png"); // Load player texture
 }
 
 void UnloadTextures() {
     UnloadTexture(sandTexture);
     UnloadTexture(rockTexture);
+    UnloadTexture(wormTexture);
+    UnloadTexture(playerTexture); // Unload player texture
+}
+
+void LoadAudio() {
+    InitAudioDevice();
+    backgroundMusic = LoadMusicStream("dune_theme.mp3");
+    winSound = LoadSound("win_sound.wav");
+}
+
+void UnloadAudio() {
+    UnloadMusicStream(backgroundMusic);
+    UnloadSound(winSound);
+    CloseAudioDevice();
 }
 
 class Cell
@@ -405,17 +425,55 @@ public:
 
     void render(int offsetX, int offsetY) const
     {
-        // Draw the trail with glow effect using shader
-        BeginShaderMode(glowShader);
-        for (size_t i = 1; i < trail.size(); ++i)
-        {
-            DrawLineEx({(float)trail[i-1].first + cellSize / 2 + offsetX, (float)trail[i-1].second + cellSize / 2 + offsetY},
-                       {(float)trail[i].first + cellSize / 2 + offsetX, (float)trail[i].second + cellSize / 2 + offsetY},
-                       cellSize / 4, WALL_GLOW_COLOR);
+        // Draw the player using the texture, scaled to fit within a single cell
+        DrawTexturePro(playerTexture, {0, 0, (float)playerTexture.width, (float)playerTexture.height}, {(float)(x + offsetX), (float)(y + offsetY), (float)cellSize, (float)cellSize}, {0, 0}, 0.0f, WHITE);
+    }
+};
+
+class Worm
+{
+public:
+    int x, y;
+    float speed;
+    int cellSize;
+    float visionRadius;
+
+    Worm(int startX, int startY, float wormSpeed, int cellSize, float visionRadius) : x(startX), y(startY), speed(wormSpeed), cellSize(cellSize), visionRadius(visionRadius) {}
+
+    void moveTowardsPlayer(const Player &player)
+    {
+        if (distanceToPlayer(player) < visionRadius) {
+            if (x < player.x)
+                x += speed;
+            else if (x > player.x)
+                x -= speed;
+
+            if (y < player.y)
+                y += speed;
+            else if (y > player.y)
+                y -= speed;
         }
+    }
+
+    float distanceToPlayer(const Player &player) const
+    {
+        return sqrt(pow(x - player.x, 2) + pow(y - player.y, 2));
+    }
+
+    bool isCollidingWithPlayer(const Player &player) const
+    {
+        return (x < player.x + cellSize && x + cellSize > player.x &&
+                y < player.y + cellSize && y + cellSize > player.y);
+    }
+
+    void render(int offsetX, int offsetY) const
+    {
+        float wormPos[2] = {(float)x, (float)y};
+        BeginShaderMode(glowShader);
+        SetShaderValue(glowShader, GetShaderLocation(glowShader, "wormPosition"), wormPos, SHADER_UNIFORM_VEC2);
+        SetShaderValue(glowShader, GetShaderLocation(glowShader, "wormRadius"), &visionRadius, SHADER_UNIFORM_FLOAT);
+        DrawTexturePro(wormTexture, {0, 0, (float)wormTexture.width, (float)wormTexture.height}, {(float)(x + offsetX), (float)(y + offsetY), (float)cellSize, (float)cellSize}, {0, 0}, 0.0f, WHITE);
         EndShaderMode();
-        // Draw the player
-        DrawRectangle(x + offsetX, y + offsetY, cellSize, cellSize, PLAYER_COLOR);
     }
 };
 
@@ -424,13 +482,14 @@ class Game
 public:
     Maze maze;
     Player player;
+    Worm worm;
     float timer;
     int cellSize;
     bool gameWon;
     bool fullscreen;
     Texture2D gameBg;
 
-    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen)
+    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), worm(0, 0, float(cellSize / 20.0f), cellSize, 200.0f), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen)
     {
         gameBg = LoadTexture("game.jpg");
     }
@@ -447,8 +506,17 @@ public:
         player.x = maze.start.first * maze.cellSize;
         player.y = maze.start.second * maze.cellSize;
 
+        // Place worm in a random position within the maze
+        do {
+            worm.x = maze.getRandomIndex(maze.mazeWidth) * maze.cellSize;
+            worm.y = maze.getRandomIndex(maze.mazeHeight) * maze.cellSize;
+        } while (maze.maze[worm.y / cellSize][worm.x / cellSize].isWall);
+
+        PlayMusicStream(backgroundMusic); // Start playing music when the game starts
+
         while (!WindowShouldClose())
         {
+            UpdateMusicStream(backgroundMusic);
             update();
             render();
         }
@@ -467,6 +535,11 @@ public:
             if (IsKeyDown(KEY_RIGHT))
                 player.moveRight(maze);
 
+            worm.moveTowardsPlayer(player);
+
+            if (worm.isCollidingWithPlayer(player))
+                reset();
+
             if (IsKeyPressed(KEY_R))
                 reset();
 
@@ -479,6 +552,7 @@ public:
             if (player.x / cellSize == maze.finish.first && player.y / cellSize == maze.finish.second)
             {
                 gameWon = true;
+                PlaySound(winSound);
             }
         }
         else
@@ -498,6 +572,7 @@ public:
 
         maze.Render();
         player.render(maze.offsetX, maze.offsetY); // Pass offsets to player render
+        worm.render(maze.offsetX, maze.offsetY); // Render the worm
 
         DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, TEXT_COLOR);
         DrawText("Press R to Reset", 10, 40, 20, TEXT_COLOR);
@@ -519,6 +594,13 @@ public:
         maze.Generate();
         player.x = maze.start.first * maze.cellSize;
         player.y = maze.start.second * maze.cellSize;
+
+        // Place worm in a random position within the maze
+        do {
+            worm.x = maze.getRandomIndex(maze.mazeWidth) * maze.cellSize;
+            worm.y = maze.getRandomIndex(maze.mazeHeight) * maze.cellSize;
+        } while (maze.maze[worm.y / cellSize][worm.x / cellSize].isWall);
+
         player.trail.clear(); // Clear the trail on reset
         timer = 0.0f;
         gameWon = false;
@@ -527,15 +609,17 @@ public:
     void returnToMenu()
     {
         int newCellSize;
-        bool fullscreen = IsWindowFullscreen();
-        ShowDifficultyMenu(newCellSize, fullscreen);
-        if (fullscreen != IsWindowFullscreen())
+        bool newFullscreen = IsWindowFullscreen();
+        ShowDifficultyMenu(newCellSize, newFullscreen);
+        if (newFullscreen != fullscreen)
         {
             ToggleFullscreen();
+            fullscreen = newFullscreen;
         }
         cellSize = newCellSize;
         maze = Maze(cellSize);
-        player = Player(cellSize, cellSize, float(cellSize / 15.0f), cellSize);
+        player = Player(maze.start.first * cellSize, maze.start.second * cellSize, float(cellSize / 5.0f), cellSize); // Corrected player initialization
+        worm = Worm(0, 0, float(cellSize / 20.0f), cellSize, 200.0f); // Initialize worm
         reset();
     }
 
@@ -553,11 +637,12 @@ int main()
 
     glowShader = LoadShader(0, "glow.fs"); // Load the glow shader
     LoadTextures(); // Load textures
+    LoadAudio(); // Load audio
 
     ShowStory(); // Show the story before the difficulty menu
 
     int cellSize;
-    bool fullscreen = false;
+    bool fullscreen = true; // Always run in fullscreen mode
     ShowDifficultyMenu(cellSize, fullscreen);
 
     if (fullscreen)
@@ -570,6 +655,7 @@ int main()
 
     UnloadShader(glowShader); // Unload the glow shader
     UnloadTextures(); // Unload textures
+    UnloadAudio(); // Unload audio
     CloseWindow();
 
     return 0;
