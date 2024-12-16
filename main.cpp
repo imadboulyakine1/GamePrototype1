@@ -12,6 +12,8 @@ using namespace std;
 const int MAZE_WIDTH = 1000;
 const int MAZE_HEIGHT = 1000;
 
+Shader glowShader;
+
 class Cell
 {
 public:
@@ -269,6 +271,7 @@ public:
     int x, y;
     float speed;
     int cellSize;
+    vector<pair<int, int>> trail; // Store the trail positions
 
     Player(int startX, int startY, float playerSpeed, int cellSize) : x(startX), y(startY), speed(playerSpeed), cellSize(cellSize) {}
 
@@ -277,6 +280,7 @@ public:
         int nextY = y - speed;
         if (!isColliding(x, nextY, maze))
         {
+            trail.push_back({x, y});
             y = nextY;
         }
     }
@@ -285,6 +289,7 @@ public:
         int nextY = y + speed;
         if (!isColliding(x, nextY, maze))
         {
+            trail.push_back({x, y});
             y = nextY;
         }
     }
@@ -293,6 +298,7 @@ public:
         int nextX = x - speed;
         if (!isColliding(nextX, y, maze))
         {
+            trail.push_back({x, y});
             x = nextX;
         }
     }
@@ -301,6 +307,7 @@ public:
         int nextX = x + speed;
         if (!isColliding(nextX, y, maze))
         {
+            trail.push_back({x, y});
             x = nextX;
         }
     }
@@ -334,6 +341,16 @@ public:
 
     void render()
     {
+        // Draw the trail with glow effect using shader
+        BeginShaderMode(glowShader);
+        for (size_t i = 1; i < trail.size(); ++i)
+        {
+            DrawLineEx({(float)trail[i-1].first + cellSize / 2, (float)trail[i-1].second + cellSize / 2},
+                       {(float)trail[i].first + cellSize / 2, (float)trail[i].second + cellSize / 2},
+                       cellSize / 4, WALL_GLOW_COLOR);
+        }
+        EndShaderMode();
+        // Draw the player
         DrawRectangle(x, y, cellSize, cellSize, PLAYER_COLOR);
     }
 };
@@ -431,6 +448,7 @@ public:
         maze.Generate();
         player.x = maze.start.first * maze.cellSize;
         player.y = maze.start.second * maze.cellSize;
+        player.trail.clear(); // Clear the trail on reset
         timer = 0.0f;
         gameWon = false;
     }
@@ -462,6 +480,8 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE);
     SetTargetFPS(60);
 
+    glowShader = LoadShader(0, "glow.fs"); // Load the glow shader
+
     int cellSize;
     bool fullscreen = false;
     ShowDifficultyMenu(cellSize, fullscreen);
@@ -474,6 +494,7 @@ int main()
     Game game(cellSize, fullscreen); // Pass cellSize and fullscreen to Game instance
     game.run();
 
+    UnloadShader(glowShader); // Unload the glow shader
     CloseWindow();
 
     return 0;
