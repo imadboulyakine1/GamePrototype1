@@ -259,19 +259,34 @@ public:
 
     bool isColliding(int nextX, int nextY, const Maze &maze) const
     {
-        // Calculate the grid coordinates of the player's next position
-        int gridX = nextX / CELL_SIZE;
-        int gridY = nextY / CELL_SIZE;
+        // Calculate the grid coordinates of the player's bounding box corners
+        int topLeftX = nextX / CELL_SIZE;
+        int topLeftY = nextY / CELL_SIZE;
+        int topRightX = (nextX + CELL_SIZE - 1) / CELL_SIZE;
+        int topRightY = nextY / CELL_SIZE;
+        int bottomLeftX = nextX / CELL_SIZE;
+        int bottomLeftY = (nextY + CELL_SIZE - 1) / CELL_SIZE;
+        int bottomRightX = (nextX + CELL_SIZE - 1) / CELL_SIZE;
+        int bottomRightY = (nextY + CELL_SIZE - 1) / CELL_SIZE;
 
-        // Check bounds and if the next cell is a wall
-        return (gridX < 0 || gridX >= maze.mazeWidth ||
-                gridY < 0 || gridY >= maze.mazeHeight ||
-                maze.maze[gridY][gridX].isWall);
+        // Check bounds and if any of the next cells are walls
+        return (topLeftX < 0 || topLeftX >= maze.mazeWidth ||
+                topLeftY < 0 || topLeftY >= maze.mazeHeight ||
+                topRightX < 0 || topRightX >= maze.mazeWidth ||
+                topRightY < 0 || topRightY >= maze.mazeHeight ||
+                bottomLeftX < 0 || bottomLeftX >= maze.mazeWidth ||
+                bottomLeftY < 0 || bottomLeftY >= maze.mazeHeight ||
+                bottomRightX < 0 || bottomRightX >= maze.mazeWidth ||
+                bottomRightY < 0 || bottomRightY >= maze.mazeHeight ||
+                maze.maze[topLeftY][topLeftX].isWall ||
+                maze.maze[topRightY][topRightX].isWall ||
+                maze.maze[bottomLeftY][bottomLeftX].isWall ||
+                maze.maze[bottomRightY][bottomRightX].isWall);
     }
 
     void render()
     {
-        DrawRectangle(x, y, CELL_SIZE / 3, CELL_SIZE / 3, PINK);
+        DrawRectangle(x, y, CELL_SIZE, CELL_SIZE, PINK);
     }
 };
 
