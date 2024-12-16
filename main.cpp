@@ -3,6 +3,8 @@
 #include <iostream>
 #include <raylib.h>
 #include <vector>
+#include <fstream>
+#include <algorithm>
 
 #include <random>
 #include <set>
@@ -19,6 +21,61 @@ Texture2D wormTexture;
 Texture2D playerTexture; // Add player texture
 Music backgroundMusic;
 Sound winSound;
+
+const int MAX_HIGH_SCORES = 10; // Maximum number of high scores to keep
+const int MAX_THIRST = 100; // Maximum thirst level
+const int THIRST_DECREASE_RATE = 1; // Thirst decrease rate per second
+const int THIRST_INCREASE_AMOUNT = 20; // Thirst increase amount when drinking water
+
+struct HighScore {
+    std::string name;
+    float time;
+};
+
+std::vector<HighScore> highScores;
+
+void LoadHighScores() {
+    std::ifstream file("highscores.txt");
+    if (file.is_open()) {
+        HighScore hs;
+        while (file >> hs.name >> hs.time) {
+            highScores.push_back(hs);
+        }
+        file.close();
+    }
+}
+
+void SaveHighScores() {
+    std::ofstream file("highscores.txt");
+    if (file.is_open()) {
+        for (const auto& hs : highScores) {
+            file << hs.name << " " << hs.time << std::endl;
+        }
+        file.close();
+    }
+}
+
+void AddHighScore(const std::string& name, float time) {
+    highScores.push_back({name, time});
+    std::sort(highScores.begin(), highScores.end(), [](const HighScore& a, const HighScore& b) {
+        return a.time < b.time;
+    });
+    if (highScores.size() > MAX_HIGH_SCORES) {
+        highScores.pop_back();
+    }
+    SaveHighScores();
+}
+
+void ShowHighScores() {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText("High Scores", SCREEN_WIDTH / 2 - 50, 50, 20, WHITE);
+    for (size_t i = 0; i < highScores.size(); ++i) {
+        DrawText(TextFormat("%d. %s - %.2f", i + 1, highScores[i].name.c_str(), highScores[i].time), SCREEN_WIDTH / 2 - 100, 100 + i * 30, 20, WHITE);
+    }
+    DrawText("Press SPACE to play again", SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT - 50, 20, WHITE);
+    EndDrawing();
+}
 
 void LoadTextures() {
     sandTexture = LoadTexture("sand.png");
@@ -50,14 +107,16 @@ class Cell
 {
 public:
     int x, y;
-    bool isWall, isVisited;
+    bool isWall, isVisited, isWater; // Add isWater flag
 
-    Cell(int xCoord = 0, int yCoord = 0, bool wall = true, bool visited = false) : x(xCoord), y(yCoord), isWall(wall), isVisited(visited) {}
+    Cell(int xCoord = 0, int yCoord = 0, bool wall = true, bool visited = false, bool water = false) : x(xCoord), y(yCoord), isWall(wall), isVisited(visited), isWater(water) {}
 
     void render(int cellSize) const
     {
         if (isWall) {
             DrawTexture(rockTexture, x, y, WHITE);
+        } else if (isWater) {
+            DrawRectangle(x, y, cellSize, cellSize, BLUE); // Render water cell
         } else {
             DrawTexture(sandTexture, x, y, WHITE);
         }
@@ -250,6 +309,15 @@ public:
         maze[finish.second][finish.first].isWall = false;
         } while (!hasNeighbors(start.first, start.second) || !hasNeighbors(finish.first, finish.second)); 
 
+        // Add random water cells
+        for (int i = 0; i < mazeHeight; ++i) {
+            for (int j = 0; j < mazeWidth; ++j) {
+                if (!maze[i][j].isWall && !maze[i][j].isWater && getRandomIndex(100) < 5) { // 5% chance to be water
+                    maze[i][j].isWater = true;
+                }
+            }
+        }
+
         // Render the maze to the texture
         BeginTextureMode(mazeTexture);
         ClearBackground(BLANK); // Clear the texture background
@@ -355,44 +423,49 @@ public:
     int x, y;
     float speed;
     int cellSize;
+    int thirst; // Add thirst level
     vector<pair<int, int>> trail; // Store the trail positions
 
-    Player(int startX, int startY, float playerSpeed, int cellSize) : x(startX), y(startY), speed(playerSpeed), cellSize(cellSize) {}
+    Player(int startX, int startY, float playerSpeed, int cellSize) : x(startX), y(startY), speed(playerSpeed), cellSize(cellSize), thirst(MAX_THIRST) {}
 
-    void moveUp(const Maze &maze)
+    void moveUp(Maze &maze)
     {
         int nextY = y - speed;
         if (!isColliding(x, nextY, maze))
         {
             trail.push_back({x, y});
             y = nextY;
+            checkWater(maze);
         }
     }
-    void moveDown(const Maze &maze)
+    void moveDown(Maze &maze)
     {
         int nextY = y + speed;
         if (!isColliding(x, nextY, maze))
         {
             trail.push_back({x, y});
             y = nextY;
+            checkWater(maze);
         }
     }
-    void moveLeft(const Maze &maze)
+    void moveLeft(Maze &maze)
     {
         int nextX = x - speed;
         if (!isColliding(nextX, y, maze))
         {
             trail.push_back({x, y});
             x = nextX;
+            checkWater(maze);
         }
     }
-    void moveRight(const Maze &maze)
+    void moveRight(Maze &maze)
     {
         int nextX = x + speed;
         if (!isColliding(nextX, y, maze))
         {
             trail.push_back({x, y});
             x = nextX;
+            checkWater(maze);
         }
     }
 
@@ -421,6 +494,16 @@ public:
                 maze.maze[topRightY][topRightX].isWall ||
                 maze.maze[bottomLeftY][bottomLeftX].isWall ||
                 maze.maze[bottomRightY][bottomRightX].isWall);
+    }
+
+    void checkWater(Maze &maze)
+    {
+        int cellX = x / cellSize;
+        int cellY = y / cellSize;
+        if (maze.maze[cellY][cellX].isWater) {
+            thirst = min(thirst + THIRST_INCREASE_AMOUNT, MAX_THIRST); // Increase thirst level
+            maze.maze[cellY][cellX].isWater = false; // Remove water cell after drinking
+        }
     }
 
     void render(int offsetX, int offsetY) const
@@ -484,19 +567,23 @@ public:
     bool gameWon;
     bool fullscreen;
     Texture2D gameBg;
+    Texture2D winBg; // Add win background texture
 
     Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), worm(0, 0, float(cellSize / 20.0f), cellSize, 200.0f), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen)
     {
         gameBg = LoadTexture("game.jpg");
+        winBg = LoadTexture("bg.jpg"); // Load win background texture
     }
 
     ~Game()
     {
         UnloadTexture(gameBg);
+        UnloadTexture(winBg); // Unload win background texture
     }
 
     void run()
     {
+        LoadHighScores(); // Load high scores at the start
         maze.Generate(); // imad: u can toggel visualisation mode here
 
         player.x = maze.start.first * maze.cellSize;
@@ -543,6 +630,10 @@ public:
                 toggleFullscreen();
 
             timer += GetFrameTime();
+            player.thirst -= THIRST_DECREASE_RATE * GetFrameTime(); // Decrease thirst level
+
+            if (player.thirst <= 0)
+                reset(); // Reset game if thirst reaches 0
 
             // Check if player reached the finish point
             if (player.x / cellSize == maze.finish.first && player.y / cellSize == maze.finish.second)
@@ -553,10 +644,11 @@ public:
         }
         else
         {
-            if (IsKeyPressed(KEY_SPACE))
+            if (IsKeyPressed(KEY_SPACE)) {
+                std::string playerName = "Player"; // Replace with actual player name input if needed
+                AddHighScore(playerName, timer);
                 reset();
-            if (IsKeyPressed(KEY_M))
-                returnToMenu();
+            }
         }
     }
 
@@ -564,22 +656,29 @@ public:
     {
         BeginDrawing();
         ClearBackground(BACKGROUND_COLOR);
-        DrawTexture(gameBg, 0, 0, WHITE);
-
-        maze.Render();
-        player.render(maze.offsetX, maze.offsetY); // Pass offsets to player render
-        worm.render(maze.offsetX, maze.offsetY); // Render the worm
-
-        DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, TEXT_COLOR);
-        DrawText("Press R to Reset", 10, 40, 20, TEXT_COLOR);
-        DrawText("Press F to Toggle Fullscreen", 10, 70, 20, TEXT_COLOR);
-        DrawFPS(SCREEN_WIDTH - 100, 10); // Display FPS at the top-right corner
 
         if (gameWon)
         {
-            DrawText("You Win!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 40, START_COLOR);
-            DrawText("Press SPACE to Replay", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, 20, TEXT_COLOR);
-            DrawText("Press M to go to Menu", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 30, 20, TEXT_COLOR);
+            DrawTexture(winBg, 0, 0, WHITE); // Draw win background
+            DrawText("You Win!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 100, 40, START_COLOR);
+            ShowHighScores(); // Show high scores on win screen
+        }
+        else
+        {
+            DrawTexture(gameBg, 0, 0, WHITE);
+            maze.Render();
+            player.render(maze.offsetX, maze.offsetY); // Pass offsets to player render
+            worm.render(maze.offsetX, maze.offsetY); // Render the worm
+
+            DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, TEXT_COLOR);
+            DrawText("Press R to Reset", 10, 40, 20, TEXT_COLOR);
+            DrawText("Press F to Toggle Fullscreen", 10, 70, 20, TEXT_COLOR);
+            DrawFPS(SCREEN_WIDTH - 100, 10); // Display FPS at the top-right corner
+
+            // Render thirst bar
+            DrawRectangle(10, 100, 200, 20, GRAY);
+            DrawRectangle(10, 100, player.thirst * 2, 20, BLUE);
+            DrawText("Thirst", 10, 80, 20, TEXT_COLOR);
         }
 
         EndDrawing();
@@ -590,6 +689,7 @@ public:
         maze.Generate();
         player.x = maze.start.first * maze.cellSize;
         player.y = maze.start.second * maze.cellSize;
+        player.thirst = MAX_THIRST; // Reset thirst level
 
         // Place worm in a random position within the maze
         do {
