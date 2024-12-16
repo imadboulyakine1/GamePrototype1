@@ -1,6 +1,6 @@
-# Maze Game
+# Dune Maze Game
 
-This is a simple maze game implemented using C++ and raylib.
+This is a Dune-themed maze game implemented using C++ and raylib.
 
 ## How to Run
 
@@ -16,9 +16,7 @@ This is a simple maze game implemented using C++ and raylib.
 - `SPACE` to replay after winning.
 - `M` to return to the menu after winning.
 
-g++ -std=c++17 main.cpp -o MazeGame -lraylib -lstdc++ 
-
-test
+g++ -std=c++17 main.cpp -o DuneMazeGame -lraylib -lstdc++ 
 
 ## Project Setup and Core Classes (Steps 1-20)
 
