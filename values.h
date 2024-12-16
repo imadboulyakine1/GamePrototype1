@@ -15,6 +15,10 @@ const Color START_COLOR = DARKGREEN;
 const Color FINISH_COLOR = RED;
 const Color TEXT_COLOR = WHITE;
 
+// Texture Definitions
+extern Texture2D sandTexture;
+extern Texture2D rockTexture;
+
 // Dificulty
 // const int CELL_SIZE = 30; // Removed CELL_SIZE definition
 

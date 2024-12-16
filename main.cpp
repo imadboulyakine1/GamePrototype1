@@ -13,6 +13,18 @@ const int MAZE_WIDTH = 1000;
 const int MAZE_HEIGHT = 1000;
 
 Shader glowShader;
+Texture2D sandTexture;
+Texture2D rockTexture;
+
+void LoadTextures() {
+    sandTexture = LoadTexture("sand.png");
+    rockTexture = LoadTexture("rock.jpg");
+}
+
+void UnloadTextures() {
+    UnloadTexture(sandTexture);
+    UnloadTexture(rockTexture);
+}
 
 class Cell
 {
@@ -25,12 +37,9 @@ public:
     void render(int cellSize) const
     {
         if (isWall) {
-            // Draw the glow effect
-            DrawRectangle(x - 2, y - 2, cellSize + 4, cellSize + 4, WALL_GLOW_COLOR);
-            // Draw the actual wall
-            DrawRectangle(x, y, cellSize, cellSize, WALL_COLOR);
+            DrawTexture(rockTexture, x, y, WHITE);
         } else {
-            DrawRectangle(x, y, cellSize, cellSize, PATH_COLOR);
+            DrawTexture(sandTexture, x, y, WHITE);
         }
     }
 };
@@ -543,6 +552,7 @@ int main()
     SetTargetFPS(60);
 
     glowShader = LoadShader(0, "glow.fs"); // Load the glow shader
+    LoadTextures(); // Load textures
 
     ShowStory(); // Show the story before the difficulty menu
 
@@ -559,6 +569,7 @@ int main()
     game.run();
 
     UnloadShader(glowShader); // Unload the glow shader
+    UnloadTextures(); // Unload textures
     CloseWindow();
 
     return 0;
