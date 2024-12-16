@@ -22,8 +22,14 @@ public:
 
     void render(int cellSize) const
     {
-        Color color = isWall ? BLACK : WHITE; // Black for walls, white for paths
-        DrawRectangle(x, y, cellSize, cellSize, color);
+        if (isWall) {
+            // Draw the glow effect
+            DrawRectangle(x - 2, y - 2, cellSize + 4, cellSize + 4, WALL_GLOW_COLOR);
+            // Draw the actual wall
+            DrawRectangle(x, y, cellSize, cellSize, WALL_COLOR);
+        } else {
+            DrawRectangle(x, y, cellSize, cellSize, PATH_COLOR);
+        }
     }
 };
 
@@ -213,22 +219,24 @@ public:
                 cell.render(cellSize);
             }
         }
-        DrawRectangle(start.first * cellSize, start.second * cellSize, cellSize, cellSize, GREEN); // Start
-        DrawRectangle(finish.first * cellSize, finish.second * cellSize, cellSize, cellSize, RED);
+        DrawRectangle(start.first * cellSize, start.second * cellSize, cellSize, cellSize, START_COLOR); // Start
+        DrawRectangle(finish.first * cellSize, finish.second * cellSize, cellSize, cellSize, FINISH_COLOR);
     }
 };
 
 void ShowDifficultyMenu(int &cellSize, bool &fullscreen)
 {
+    Texture2D bg = LoadTexture("bg.jpg");
     while (true)
     {
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText("Select Difficulty", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100, 20, BLACK);
-        DrawText("1. Easy", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 20, BLACK);
-        DrawText("2. Medium", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2, 20, BLACK);
-        DrawText("3. Hard", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 50, 20, BLACK);
-        DrawText("Press F for Fullscreen", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 100, 20, BLACK);
+        ClearBackground(BACKGROUND_COLOR);
+        DrawTexture(bg, 0, 0, WHITE);
+        DrawText("Select Difficulty", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100, 20, TEXT_COLOR);
+        DrawText("1. Easy", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 20, TEXT_COLOR);
+        DrawText("2. Medium", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2, 20, TEXT_COLOR);
+        DrawText("3. Hard", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 50, 20, TEXT_COLOR);
+        DrawText("Press F for Fullscreen", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 100, 20, TEXT_COLOR);
         EndDrawing();
 
         if (IsKeyPressed(KEY_ONE))
@@ -252,6 +260,7 @@ void ShowDifficultyMenu(int &cellSize, bool &fullscreen)
             break;
         }
     }
+    UnloadTexture(bg);
 }
 
 class Player
@@ -325,7 +334,7 @@ public:
 
     void render()
     {
-        DrawRectangle(x, y, cellSize, cellSize, PINK);
+        DrawRectangle(x, y, cellSize, cellSize, PLAYER_COLOR);
     }
 };
 
@@ -339,7 +348,7 @@ public:
     bool gameWon;
     bool fullscreen;
 
-    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 15.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen) {}
+    Game(int cellSize, bool fullscreen) : maze(cellSize), player(cellSize, cellSize, float(cellSize / 5.0f), cellSize), timer(0.0f), cellSize(cellSize), gameWon(false), fullscreen(fullscreen) {}
 
     void run()
     {
@@ -393,24 +402,28 @@ public:
 
     void render()
     {
+        Texture2D gameBg = LoadTexture("game.jpg");
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(BACKGROUND_COLOR);
+        DrawTexture(gameBg, 0, 0, WHITE);
 
         maze.Render();
         player.render(); // Render the player
 
-        DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, BLACK);
-        DrawText("Press R to Reset", 10, 40, 20, BLACK);
-        DrawText("Press F to Toggle Fullscreen", 10, 70, 20, BLACK);
+        DrawText(TextFormat("Time: %.2f", timer), 10, 10, 20, TEXT_COLOR);
+        DrawText("Press R to Reset", 10, 40, 20, TEXT_COLOR);
+        DrawText("Press F to Toggle Fullscreen", 10, 70, 20, TEXT_COLOR);
+        DrawFPS(SCREEN_WIDTH - 100, 10); // Display FPS at the top-right corner
 
         if (gameWon)
         {
-            DrawText("You Win!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 40, GREEN);
-            DrawText("Press SPACE to Replay", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, 20, BLACK);
-            DrawText("Press M to go to Menu", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 30, 20, BLACK);
+            DrawText("You Win!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 50, 40, START_COLOR);
+            DrawText("Press SPACE to Replay", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2, 20, TEXT_COLOR);
+            DrawText("Press M to go to Menu", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 + 30, 20, TEXT_COLOR);
         }
 
         EndDrawing();
+        UnloadTexture(gameBg);
     }
 
     void reset()
