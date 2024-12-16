@@ -129,6 +129,8 @@ g++ -std=c++17 main.cpp -o DuneMazeGame -lraylib -lstdc++
 
     Improve Collision Detection: Refine collision handling for smoother movement.
 
+    Thirst Mechanics: Implement thirst mechanics where the player needs to find water cells to survive.
+
     Code Comments: Add comments to your code for better readability.
 
     Code Formatting: Format your code consistently.

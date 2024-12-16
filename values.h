@@ -15,6 +15,11 @@ const Color START_COLOR = DARKGREEN;
 const Color FINISH_COLOR = RED;
 const Color TEXT_COLOR = WHITE;
 
+// Thirst Mechanics
+const int MAX_THIRST = 100000;
+const float THIRST_DECREASE_RATE = 1000;  // Changed from 1 to 0.001f for slower decrease
+const int THIRST_INCREASE_AMOUNT = 20000; // Adjusted for the new MAX_THIRST
+
 // Texture Definitions
 extern Texture2D sandTexture;
 extern Texture2D rockTexture;

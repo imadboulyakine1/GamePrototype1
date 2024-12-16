@@ -23,9 +23,6 @@ Music backgroundMusic;
 Sound winSound;
 
 const int MAX_HIGH_SCORES = 10; // Maximum number of high scores to keep
-const int MAX_THIRST = 100; // Maximum thirst level
-const int THIRST_DECREASE_RATE = 1; // Thirst decrease rate per second
-const int THIRST_INCREASE_AMOUNT = 20; // Thirst increase amount when drinking water
 
 struct HighScore {
     std::string name;
@@ -677,8 +674,8 @@ public:
 
             // Render thirst bar
             DrawRectangle(10, 100, 200, 20, GRAY);
-            DrawRectangle(10, 100, player.thirst * 2, 20, BLUE);
-            DrawText("Thirst", 10, 80, 20, TEXT_COLOR);
+            DrawRectangle(10, 100, (player.thirst * 200 / MAX_THIRST), 20, BLUE); // Scale thirst for display
+            DrawText(TextFormat("Thirst: %d%%", (player.thirst * 100 / MAX_THIRST)), 10, 80, 20, TEXT_COLOR); // Display thirst percentage
         }
 
         EndDrawing();
