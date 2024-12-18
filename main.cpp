@@ -500,6 +500,20 @@ public:
         if (maze.maze[cellY][cellX].isWater) {
             thirst = min(thirst + THIRST_INCREASE_AMOUNT, MAX_THIRST); // Increase thirst level
             maze.maze[cellY][cellX].isWater = false; // Remove water cell after drinking
+            
+            // Re-render the entire maze texture to reflect the change
+            BeginTextureMode(maze.mazeTexture);
+            ClearBackground(BLANK); // Clear the texture background
+            for (const auto &row : maze.maze)
+            {
+                for (const auto &cell : row)
+                {
+                    cell.render(cellSize);
+                }
+            }
+            DrawRectangle(maze.start.first * cellSize, maze.start.second * cellSize, cellSize, cellSize, START_COLOR); // Start
+            DrawRectangle(maze.finish.first * cellSize, maze.finish.second * cellSize, cellSize, cellSize, FINISH_COLOR); // Finish
+            EndTextureMode();
         }
     }
 
